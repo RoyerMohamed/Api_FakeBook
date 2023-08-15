@@ -14,7 +14,10 @@ class UserController extends Controller
      */
     public function index()
     {
-        return User::all();
+        if ( User::count() != 0 ) {
+            return response()->json(['message' => 'Pas d\'utilisateur trouvé'], 404);
+        }
+        return response()->json(['message' => 'Utilisateurs trouvé', 'users' => User::all()], 200) ;
     }
 
     /**
@@ -22,14 +25,13 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        // $userValidation = User::create($request->all()); 
         $userValidation = $request->validate([
             'pseudo' => 'max:50|min:8|required',
             'email' => 'required',
             'password' => Password::default(),
         ]); 
         
-        return response()->json($userValidation , 200); 
+        return response()->json(['message' => 'L\'utilisateur a été ajouté ', 'user' => $userValidation ], 200); 
     }
 
     /**
@@ -37,6 +39,9 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
+        if (!$user) {
+            return response()->json(['message' => 'Pas d\'utilisateur trouvé'], 404);
+        }
         return $user; 
     }
 
@@ -47,7 +52,7 @@ class UserController extends Controller
     {
 
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return response()->json(['message' => 'Pas d\'utilisateur trouvé'], 404);
         }
 
         $data = $request->validate([
@@ -66,6 +71,12 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        //
+
+        if (!$user) {
+            return response()->json(['message' => 'Pas d\'utilisateur trouvé'], 404);
+        }
+
+        User::destroy($user->id);
+        return response()->json(['message' => 'L\'utilisateur a été supprimé '], 200);
     }
 }

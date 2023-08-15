@@ -13,7 +13,11 @@ class PostController extends Controller
      */
     public function index()
     {
-        return Post::all();
+        if (!Post::count()) {
+            return response()->json(['message' => 'Pas de publication trouvé'], 404);
+        }
+
+        return response()->json(['message' => 'Publications trouvée', 'posts' => Post::all()], 200);
     }
 
     /**
@@ -21,7 +25,16 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'content' => 'string',
+            'image' => 'string',
+            'tags' => 'string',
+            'user_id' => 'int'
+        ]);
+
+        Post::create($data);
+
+        return response()->json(['message' => 'La publication a bient été ajoutée'], 200);
     }
 
     /**
@@ -29,7 +42,11 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-        return $post; 
+        if (!$post) {
+            return response()->json(['message' => 'Pas de publication trouvé'], 404);
+        }
+
+        return response()->json(['message' => 'Publication trouvée', 'post' => $post], 200);
     }
 
     /**
@@ -37,7 +54,19 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
-        //
+        if (!$post) {
+            return response()->json(['message' => 'Pas de publication trouvé'], 404);
+        }
+
+        $data = $request->validate([
+            'content' => 'string',
+            'image' => 'string',
+            'tags' => 'string',
+            'user_id' => 'int'
+        ]);
+        $post->update($data);
+
+        return response()->json(['message' => 'La publication a bient été mise a jours', 'post' => $post], 200);
     }
 
     /**
@@ -45,6 +74,12 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        //
+        if (!$post) {
+            return response()->json(['message' => 'Pas de publication trouvé'], 404);
+        }
+
+        Post::destroy($post->id);
+
+        return response()->json(['message' => 'La publication a bient été supprimée '], 200);
     }
 }

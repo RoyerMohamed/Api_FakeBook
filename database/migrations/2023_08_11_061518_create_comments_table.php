@@ -17,9 +17,11 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->string('tags');
             $table->timestamps();
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedBigInteger('post_id');
+            $table->foreign('post_id')->references('id')->on('posts')->onDelete('cascade');
 
-            $table->foreignId('user_id')->constrained(); 
-            $table->foreignId('post_id')->constrained(); 
         });
     }
 

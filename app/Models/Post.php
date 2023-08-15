@@ -9,7 +9,14 @@ class Post extends Model
 {
     use HasFactory;
 
-    protected $with = ['user'];
+    protected $with = ['user', 'comments'];
+
+    protected $fillable = [
+        'content',
+        'image',
+        'tags' ,
+        'user_id' 
+    ];
 
     public function comments(){
         return $this->hasMany(Comment::class); 
