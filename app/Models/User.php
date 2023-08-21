@@ -23,6 +23,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role_id',
+        'ancien_mdp',
+        'Nouveau_mdp'
     ];
 
     /**

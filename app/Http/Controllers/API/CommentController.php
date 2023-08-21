@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Comment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class CommentController extends Controller
 {
@@ -14,10 +15,10 @@ class CommentController extends Controller
     public function index()
     {
         if (!Comment::count()) {
-            return response()->json(['message' => 'Pas de commentaires trouvé'], 404);
+            return response()->json(['message' => 'Pas de commentaires trouvé'], 200);
         }
 
-        return response()->json(['message' => 'Commentairs trouvée', 'comments' => Comment::all()], 200);
+        return response()->json(['message' => 'Commentairs trouvés', 'comments' => Comment::latest()->get()], 200);
     }
 
     /**
@@ -25,17 +26,30 @@ class CommentController extends Controller
      */
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'content' => 'string',
-            'image' => 'string',
-            'tags' => 'string',
-            'user_id' => 'int', 
-            'post_id'=> 'int'
-        ]);
+        // mise en place des validatore adéquate 
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'content' => 'string',
+                'image' => 'string',
+                'tags' => 'string',
+            ]
+        );
 
-        Comment::create($data);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
 
-        return response()->json(['message' => 'Le Commentaire a bient été ajoutée'], 200);
+        // mise en place de la saugarde de l'image en public
+        if ($request->image) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->extension();
+            $image->move(public_path('images'), $imageName);
+        }
+
+        $comment = Comment::create($request->all());
+
+        return response()->json(['message' => 'Le Commentaire a bient été ajouté', $comment], 201);
     }
 
     /**
@@ -44,10 +58,10 @@ class CommentController extends Controller
     public function show(Comment $comment)
     {
         if (!$comment) {
-            return response()->json(['message' => 'Pas de commentaire trouvé'], 404);
+            return response()->json(['message' => 'Pas de commentaire trouvé'], 200);
         }
 
-        return response()->json(['message' => 'Commentaire trouvée', 'comment' => $comment], 200);
+        return response()->json(['message' => 'Commentaire trouvé', 'comment' => $comment], 200);
     }
 
     /**
@@ -55,18 +69,28 @@ class CommentController extends Controller
      */
     public function update(Request $request, Comment $comment)
     {
-        
-        if (!$comment) {
-            return response()->json(['message' => 'Pas de commentaire trouvé'], 404);
+        // mise en place des validatore adéquate 
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'content' => 'string',
+                'image' => 'string',
+                'tags' => 'string',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
         }
 
-        $data = $request->validate([
-            'content' => 'string',
-            'image' => 'string',
-            'tags' => 'string',
-            'user_id' => 'int'
-        ]);
-        $comment->update($data);
+        // mise en place de la saugarde de l'image en public
+        if ($request->image && $request->image !== $comment->image) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->extension();
+            $image->move(public_path('images'), $imageName);
+        }
+
+        $comment->update($request->all());
 
         return response()->json(['message' => 'Le commentaire a bient été mise a jours', 'comment' => $comment], 200);
     }
@@ -76,14 +100,15 @@ class CommentController extends Controller
      */
     public function destroy(Comment $comment)
     {
-        
+
         if (!$comment) {
-            return response()->json(['message' => 'Pas de commentaire trouvé'], 404);
+            return response()->json(['message' => 'La resource n\'existe pas '], 404);
         }
 
-        Comment::destroy($comment->id);
+        // Comment::destroy($comment->id);
+
+        $comment->delete($comment->id);
 
         return response()->json(['message' => 'Le commentaire a bient été supprimée '], 200);
-    
     }
 }

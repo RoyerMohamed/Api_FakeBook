@@ -15,7 +15,8 @@ class Post extends Model
         'content',
         'image',
         'tags' ,
-        'user_id' 
+        'user_id',
+        'post_id' 
     ];
 
     public function comments(){

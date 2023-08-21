@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class PostController extends Controller
 {
@@ -14,10 +15,10 @@ class PostController extends Controller
     public function index()
     {
         if (!Post::count()) {
-            return response()->json(['message' => 'Pas de publication trouvé'], 404);
+            return response()->json(['message' => 'Pas de publication trouvé'], 200);
         }
 
-        return response()->json(['message' => 'Publications trouvée', 'posts' => Post::all()], 200);
+        return response()->json(['message' => 'Publications trouvée', 'posts' => Post::latest()->get()], 200);
     }
 
     /**
@@ -25,16 +26,30 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'content' => 'string',
-            'image' => 'string',
-            'tags' => 'string',
-            'user_id' => 'int'
-        ]);
+        // Validation des donnée reçu 
+        $validator = Validator::make($request->all(), [
+            'content' => 'required|string|max:1000',
+            'image' => 'mimes:jpeg,png,jpg',
+            'tags' => 'required|string|max:255',
+            'user_id' => 'int|max:1'
+            ]
+        );
 
-        Post::create($data);
+        // Gestion des erreurs du validateur
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
 
-        return response()->json(['message' => 'La publication a bient été ajoutée'], 200);
+        // Gestion de la sauvegarde de l'image
+        if ($request->image) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->extension();
+            $image->move(public_path('images'), $imageName);
+        }
+
+      $post =   Post::create($request->all());
+
+        return response()->json(['message' => 'La publication a bient été ajoutée', $post], 201);
     }
 
     /**
@@ -43,7 +58,7 @@ class PostController extends Controller
     public function show(Post $post)
     {
         if (!$post) {
-            return response()->json(['message' => 'Pas de publication trouvé'], 404);
+            return response()->json(['message' => 'Pas de publication trouvé'], 200);
         }
 
         return response()->json(['message' => 'Publication trouvée', 'post' => $post], 200);
@@ -54,19 +69,35 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
+
         if (!$post) {
-            return response()->json(['message' => 'Pas de publication trouvé'], 404);
+            return response()->json(['message' => 'Pas de publication trouvé'], 200);
+        } 
+
+         // Validation des donnée reçu 
+         $validator = Validator::make($request->all(), [
+            'content' => 'string|max:1000',
+            'image' => 'mimes:jpeg,png,jpg',
+            'tags' => 'string|max:255',
+            'user_id' => 'int|max:1'
+            ]
+        );
+
+        // Gestion des erreurs du validateur
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
         }
 
-        $data = $request->validate([
-            'content' => 'string',
-            'image' => 'string',
-            'tags' => 'string',
-            'user_id' => 'int'
-        ]);
-        $post->update($data);
+        // Gestion de la sauvegarde de l'image
+        if ($request->image) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->extension();
+            $image->move(public_path('images'), $imageName);
+        }
 
-        return response()->json(['message' => 'La publication a bient été mise a jours', 'post' => $post], 200);
+        $post->update($request->all());
+
+        return response()->json(['message' => 'La publication a bient été mise a jours', 'Publication' => $post], 200);
     }
 
     /**
