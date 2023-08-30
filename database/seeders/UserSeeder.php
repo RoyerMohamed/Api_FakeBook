@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
     {
         User::create([
             'pseudo' => "Alan",
-            'email' => fake()->unique()->safeEmail(),
+            'email' => "aa@aa.com",
             'email_verified_at' => now(),
             'password' => Hash::make('test'), // password
             'remember_token' => Str::random(10),

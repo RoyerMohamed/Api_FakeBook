@@ -16,7 +16,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        if (User::count() <= 0) {
+        if (User::count() == 0) {
             return response()->json(['message' => 'Pas d\'utilisateur trouvé'], 200);
         }
         return response()->json(['message' => 'Utilisateurs trouvé', 'users' => User::latest()->get()], 200);
@@ -32,18 +32,20 @@ class UserController extends Controller
             $request->all(),
             [
                 'pseudo' => 'max:50|min:8|required',
-                'email' => 'required',
+                'email' => 'required|email',
                 'image' => 'mimes:jpeg,png,jpg',
-                'password' => Password::min(8)
+                'password' =>'required', Password::min(8)
                     ->letters()
                     ->mixedCase()
                     ->numbers(),
             ]
         );
-
+        // Si les information fournit par l'utilateur ne coresponde pas au format des valeurs demander 
+        // je renvoie un messages d'erreur 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
+       
         // mise en place de la saugarde de l'image en public
         if ($request->image) {
             $image = $request->file('image');
@@ -53,7 +55,7 @@ class UserController extends Controller
 
         $user = User::create($request->all());
 
-        return response()->json(['message' => 'L\'utilisateur a été ajouté ', 'user' => $user], 200);
+        return response()->json(['message' => 'L\'utilisateur a été ajouté ',  $user], 200);
     }
 
     /**
@@ -79,12 +81,9 @@ class UserController extends Controller
             $request->all(),
             [
                 'pseudo' => 'max:50|min:8|required',
-                'email' => 'required',
+                'email' => 'email',
                 'image' => 'mimes:jpeg,png,jpg',
-                'password' => Password::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers(),
+                'password' =>'nullable'
             ]
         );
 
@@ -99,18 +98,21 @@ class UserController extends Controller
             $image->move(public_path('images'), $imageName);
         }
 
+        if($request->password){
+            $this->updatepassword($request , $user);
+        }
+        
         $user->update($request->all());
 
         return response()->json(['message' => 'User updated successfully',  $user], 200);
     }
 
 
-    public function updatepassword(Request $request, User $user)
+    private function updatepassword(Request $request, User $user)
     {
 
         $validator = Validator::make($request->all(), [
-            'ancien_mdp' => ['required'],
-            'Nouveau_mdp' => ['required', Password::min(8)
+            'nouveau_mdp' => ['required', Password::min(8)
                 ->letters()
                 ->mixedCase()
                 ->numbers()],
