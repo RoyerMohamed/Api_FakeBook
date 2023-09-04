@@ -11,6 +11,14 @@ use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
+
+
+    public function __construct()
+    {
+        // j'evite de mettre ma route 'store' dans le middleware 
+        // je peux aussi mettre only pour en rajouter
+        $this->middleware("auth:sanctum")->except('store');
+    }
     /**
      * Display a listing of the resource.
      */
@@ -28,16 +36,15 @@ class UserController extends Controller
     public function store(Request $request)
     {
 
+        // Je Vérifie les données fornit par le formulaire d'inscription avec 
+        // Validator::make qui permet de ajouter des régle comme la longuer de la donnee, type accecter, etc... 
         $validator = Validator::make(
             $request->all(),
             [
                 'pseudo' => 'max:50|min:8|required',
                 'email' => 'required|email',
-                'image' => 'mimes:jpeg,png,jpg',
-                'password' =>'required', Password::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers(),
+                'image' => 'mimes:jpeg,png,jpg|nullable',
+                'password' => 'required', Password::min(8)->letters()->mixedCase()->numbers(),
             ]
         );
         // Si les information fournit par l'utilateur ne coresponde pas au format des valeurs demander 
@@ -45,17 +52,29 @@ class UserController extends Controller
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
-       
+
         // mise en place de la saugarde de l'image en public
         if ($request->image) {
             $image = $request->file('image');
             $imageName = time() . '.' . $image->extension();
             $image->move(public_path('images'), $imageName);
         }
+        // creation de l'utilisater
+        $user = User::create([
+            'pseudo' => $request->pseudo,
+            'email' =>  $request->email,
+            'image' =>  $request->image,
+            'password' => Hash::make($request->password)
+        ]);
 
-        $user = User::create($request->all());
-
-        return response()->json(['message' => 'L\'utilisateur a été ajouté ',  $user], 200);
+        // je retourn l'utilisateur cree acompagner de sont token 
+        return response()->json(
+            [
+                'message' => 'L\'utilisateur a été ajouté ',
+                "user" => $user
+            ],
+            200
+        );
     }
 
     /**
